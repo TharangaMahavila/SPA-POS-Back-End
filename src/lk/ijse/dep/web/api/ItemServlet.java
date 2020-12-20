@@ -12,10 +12,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,27 +27,33 @@ public class ItemServlet extends HttpServlet {
     }
 
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        String id = request.getParameter("id");
         BasicDataSource cp = (BasicDataSource) getServletContext().getAttribute("cp");
-        response.addHeader("Access-Control-Allow-Origin","http://localhost:3000");
         response.setContentType("application/json");
-        try(PrintWriter out=response.getWriter()){
-            try{
-                Connection connection = cp.getConnection();
-                Statement stm = connection.createStatement();
-                ResultSet rs = stm.executeQuery("SELECT * FROM item");
+            try(Connection connection = cp.getConnection();){
+                PrintWriter out=response.getWriter();
+                PreparedStatement pstm = connection.prepareStatement("SELECT * FROM item"+((id!=null)?"WHERE id=?":""));
+                if(id!=null){
+                    pstm.setObject(1,id);
+                }
+                ResultSet rs = pstm.executeQuery();
                 List<Item> itemList=new ArrayList<>();
                 while (rs.next()){
-                    String id=rs.getString(1);
+                    id=rs.getString(1);
                     String name=rs.getString(2);
                     double qty=Double.parseDouble(rs.getString(3));
                     double price=Double.parseDouble(rs.getString(4));
                     itemList.add(new Item(id,name,qty,price));
                 }
-                Jsonb jsonb= JsonbBuilder.create();
-                out.println(jsonb.toJson(itemList));
+                if(id!=null && itemList.isEmpty()){
+                    response.sendError(HttpServletResponse.SC_NOT_FOUND);
+                }else {
+                    Jsonb jsonb = JsonbBuilder.create();
+                    out.println(jsonb.toJson(itemList));
+                }
             } catch (SQLException throwables) {
                 throwables.printStackTrace();
+                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             }
-        }
     }
 }

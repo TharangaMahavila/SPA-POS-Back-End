@@ -27,7 +27,6 @@ public class Servlet extends javax.servlet.http.HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        resp.addHeader("Access-Control-Allow-Origin","http://localhost:3000");
         String id = req.getParameter("id");
         BasicDataSource cp = (BasicDataSource) getServletContext().getAttribute("cp");
         resp.setContentType("application/json");
@@ -59,15 +58,7 @@ public class Servlet extends javax.servlet.http.HttpServlet {
     }
 
     @Override
-    protected void doOptions(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        resp.addHeader("Access-Control-Allow-Origin","http://localhost:3000");
-        resp.addHeader("Access-Control-Allow-Headers","Content-Type");
-        resp.addHeader("Access-Control-Allow-Methods","POST, PUT, GET, OPTIONS, DELETE");
-    }
-
-    @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        resp.addHeader("Access-Control-Allow-Origin","http://localhost:3000");
         BasicDataSource cp = (BasicDataSource) getServletContext().getAttribute("cp");
 
         try(Connection connection = cp.getConnection();){
@@ -106,7 +97,6 @@ public class Servlet extends javax.servlet.http.HttpServlet {
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        resp.addHeader("Access-Control-Allow-Origin","http://localhost:3000");
         String id=req.getParameter("id");
         if(id==null || !id.matches("C\\d{3}")){
             resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
@@ -153,7 +143,6 @@ public class Servlet extends javax.servlet.http.HttpServlet {
 
     @Override
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        resp.addHeader("Access-Control-Allow-Origin","http://localhost:3000");
         String id=req.getParameter("id");
         if(id==null || !id.matches("C\\d{3}")){
             resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
