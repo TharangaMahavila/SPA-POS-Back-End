@@ -23,6 +23,7 @@ import java.util.List;
  **/
 @WebServlet(name = "ItemServlet", urlPatterns = ("/items"))
 public class ItemServlet extends HttpServlet {
+
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 
         Jsonb jsonb = JsonbBuilder.create();
@@ -87,5 +88,48 @@ public class ItemServlet extends HttpServlet {
                 throwables.printStackTrace();
                 response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             }
+    }
+
+    @Override
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String id = req.getParameter("id");
+        if(id==null || !id.matches("I\\d{3}")){
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+        Jsonb jsonb = JsonbBuilder.create();
+        Item item = jsonb.fromJson(req.getReader(), Item.class);
+        if(item.getId()==null || item.getName()==null || item.getQty()==0.0 || item.getPrice()==0.0){
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+        if(!item.getId().matches("I\\d{3}") || item.getId().trim().isEmpty()|| item.getName().trim().isEmpty()){
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+        BasicDataSource cp = (BasicDataSource) getServletContext().getAttribute("cp");
+        try(Connection connection = cp.getConnection()){
+            PreparedStatement pstm = connection.prepareStatement("SELECT * FROM item WHERE id=?");
+            pstm.setObject(1,id);
+            if(pstm.executeQuery().next()){
+                pstm =connection.prepareStatement("UPDATE item SET name=?, qty=?, price=? WHERE id=?");
+                pstm.setObject(1,item.getName());
+                pstm.setObject(2,item.getQty());
+                pstm.setObject(3,item.getPrice());
+                pstm.setObject(4,item.getId());
+                if(pstm.executeUpdate()>0){
+                    resp.setStatus(HttpServletResponse.SC_CREATED);
+                } else {
+                    resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                }
+            }else {
+                resp.sendError(HttpServletResponse.SC_NOT_FOUND);
+            }
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        } catch (JsonbException e){
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
+        }
     }
 }
