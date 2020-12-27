@@ -132,4 +132,34 @@ public class ItemServlet extends HttpServlet {
             resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
         }
     }
+
+    @Override
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String id = req.getParameter("id");
+        if(id==null || !id.matches("I\\d{3}")){
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+        BasicDataSource cp = (BasicDataSource) getServletContext().getAttribute("cp");
+        try(Connection connection = cp.getConnection()){
+            PreparedStatement pstm = connection.prepareStatement("SELECT * FROM item WHERE id=?");
+            pstm.setObject(1,id);
+            if(pstm.executeQuery().next()){
+                pstm=connection.prepareStatement("DELETE FROM item WHERE id=?");
+                pstm.setObject(1,id);
+                if(pstm.executeUpdate()>0){
+                    resp.setStatus(HttpServletResponse.SC_CREATED);
+                }else {
+                    resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                }
+            }else {
+                resp.sendError(HttpServletResponse.SC_NOT_FOUND);
+            }
+        } catch (SQLIntegrityConstraintViolationException e){
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        }
+    }
 }
