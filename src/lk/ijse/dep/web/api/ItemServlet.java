@@ -2,6 +2,7 @@ package lk.ijse.dep.web.api;
 
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
+import jakarta.json.bind.JsonbException;
 import lk.ijse.dep.web.model.Item;
 import org.apache.commons.dbcp2.BasicDataSource;
 
@@ -24,6 +25,37 @@ import java.util.List;
 public class ItemServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 
+        Jsonb jsonb = JsonbBuilder.create();
+        Item item = jsonb.fromJson(request.getReader(), Item.class);
+        if(item.getId()==null || item.getName()==null || item.getPrice()==0.0 || item.getQty()==0.0){
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+        if(!item.getId().matches("I\\d{3}")||item.getName().trim().isEmpty()){
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+
+        BasicDataSource cp = (BasicDataSource) getServletContext().getAttribute("cp");
+            try(Connection connection = cp.getConnection()){
+                PreparedStatement pst = connection.prepareStatement("INSERT INTO item VALUES (?,?,?,?)");
+                pst.setObject(1,item.getId());
+                pst.setObject(2,item.getName());
+                pst.setObject(3,item.getQty());
+                pst.setObject(4,item.getPrice());
+                if(pst.executeUpdate()>0){
+                    response.setStatus(HttpServletResponse.SC_CREATED);
+                }else {
+                    response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                }
+            } catch (SQLIntegrityConstraintViolationException e){
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            } catch (SQLException throwables) {
+                throwables.printStackTrace();
+                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            }catch (JsonbException e){
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            }
     }
 
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
