@@ -54,7 +54,7 @@ public class ItemServlet extends HttpServlet {
             } catch (SQLException throwables) {
                 throwables.printStackTrace();
                 response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            }catch (JsonbException e){
+            } catch (JsonbException e){
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST);
             }
     }
@@ -65,7 +65,7 @@ public class ItemServlet extends HttpServlet {
         response.setContentType("application/json");
             try(Connection connection = cp.getConnection();){
                 PrintWriter out=response.getWriter();
-                PreparedStatement pstm = connection.prepareStatement("SELECT * FROM item"+((id!=null)?"WHERE id=?":""));
+                PreparedStatement pstm = connection.prepareStatement("SELECT * FROM item"+((id!=null)?" WHERE id=?":""));
                 if(id!=null){
                     pstm.setObject(1,id);
                 }
